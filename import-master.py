@@ -12,10 +12,20 @@ import sys
 def main(pgn):
     session = requests.session()
 
+    counterEloPresent = 0
+    counterEloAbsent = 0
+
     while True:
         game = chess.pgn.read_game(pgn)
         if game is None:
             break
+        if "WhiteElo" in game.headers:
+            counterEloPresent += 1
+        else:
+            counterEloAbsent += 1
+
+        if counterEloPresent % 10000 == 0 and counterEloPresent > 0:
+            print(counterEloPresent, counterEloAbsent)
 
         obj = {
             "event": game.headers["Event"],
@@ -24,11 +34,11 @@ def main(pgn):
             "round": game.headers["Round"],
             "white": {
                 "name": game.headers["White"],
-                "rating": int(game.headers["WhiteElo"]),
+                "rating": int(game.headers["WhiteElo"]) if "WhiteElo" in game.headers else 0,
             },
             "black": {
                 "name": game.headers["Black"],
-                "rating": int(game.headers["BlackElo"]),
+                "rating": int(game.headers["BlackElo"]) if "BlackElo" in game.headers else 0,
             },
             "winner": winner(game),
             "moves": " ".join(m.uci() for m in game.end().board().move_stack)
@@ -37,11 +47,6 @@ def main(pgn):
         obj["id"] = game.headers.get("LichessId") or deterministic_id(obj)
 
         res = session.put("http://localhost:9002/import/masters", json=obj)
-
-        if res.status_code != 200:
-            print(res.text)
-        else:
-            print(obj["id"])
 
 
 def winner(game):

@@ -35,7 +35,7 @@ impl MastersImporter {
             body.game.players.white.rating,
             body.game.players.black.rating,
         );
-        if avg_rating < 2200 {
+        if avg_rating < 2000 {
             return Err(Error::RejectedRating {
                 id: body.id,
                 rating: avg_rating,
